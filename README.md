@@ -6,6 +6,8 @@
 
 参考笔记：`gitee.com/bigbug55/webdesign` 的《quiz-java后端》系列（记录 1 ~ 5）。
 
+本仓库：https://github.com/nijinbo916/quiz-java
+
 > 两次课的课件原文都是「今日自己学习上述基础内容，**无作业需要提交**」。所以这个仓库不是提交项，而是把课上要求真正跑通的产物。
 
 ---
