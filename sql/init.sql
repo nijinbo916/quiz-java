@@ -51,26 +51,51 @@ VALUES ('admin', '123456', 0, 1),
        ('陈小北', 'qwerty', 0, 0),
        ('倪金博', 'admin888', 0, 1);
 
--- 3) 题目表（下节课做前后端联调时要用的，先建好）
-DROP TABLE IF EXISTS quiz.question;
-CREATE TABLE quiz.question
+-- 3) 题目表（第八次课 11-6：题目页与前后端联调）
+-- 字段与老师笔记《Quiz后端-6》一致：选项固定 4 个，用 answer1~4Correct 标记正确答案；
+-- category 是额外加的，方便管理台按分类筛选
+DROP TABLE IF EXISTS quiz.questions;
+CREATE TABLE quiz.questions
 (
-    id         BIGINT AUTO_INCREMENT PRIMARY KEY,
-    title      VARCHAR(512)                       NOT NULL COMMENT '题干',
-    category   VARCHAR(64)                        NULL COMMENT '分类',
-    optionA    VARCHAR(256)                       NULL,
-    optionB    VARCHAR(256)                       NULL,
-    optionC    VARCHAR(256)                       NULL,
-    optionD    VARCHAR(256)                       NULL,
-    answer     INT      DEFAULT 0                 NULL COMMENT '正确答案下标 0-3',
-    isDelete   TINYINT  DEFAULT 0                 NULL,
-    createTime DATETIME DEFAULT CURRENT_TIMESTAMP NULL,
-    updateTime DATETIME DEFAULT CURRENT_TIMESTAMP NULL
+    id             INT PRIMARY KEY AUTO_INCREMENT,
+    questionText   VARCHAR(255)                       NOT NULL COMMENT '题干',
+    answer1Text    VARCHAR(255)                       NOT NULL,
+    answer1Correct BOOLEAN      DEFAULT FALSE         NOT NULL,
+    answer2Text    VARCHAR(255)                       NOT NULL,
+    answer2Correct BOOLEAN      DEFAULT FALSE         NOT NULL,
+    answer3Text    VARCHAR(255)                       NOT NULL,
+    answer3Correct BOOLEAN      DEFAULT FALSE         NOT NULL,
+    answer4Text    VARCHAR(255)                       NOT NULL,
+    answer4Correct BOOLEAN      DEFAULT FALSE         NOT NULL,
+    category       VARCHAR(64)                        NULL COMMENT '分类',
+    isDelete       TINYINT      DEFAULT 0             NULL COMMENT '0-未删除，1-已逻辑删除',
+    createTime     DATETIME     DEFAULT CURRENT_TIMESTAMP NULL,
+    updateTime     DATETIME     DEFAULT CURRENT_TIMESTAMP NULL
 ) COMMENT '题目表';
 
-INSERT INTO quiz.question (title, category, optionA, optionB, optionC, optionD, answer)
-VALUES ('在 HTML 中，用来表示页面标题栏文字的是哪个标签？', 'HTML', '<body>', '<title>', '<head>', '<h1>', 1),
-       ('CSS 中设置文字颜色的属性是？', 'CSS', 'font-color', 'text-color', 'color', 'foreground', 2),
-       ('在 JavaScript 中，声明一个不能被重新赋值的变量应使用？', 'JavaScript', 'var', 'let', 'const', 'static', 2),
-       ('Vue 中实现双向绑定的指令是？', 'Vue', 'v-bind', 'v-on', 'v-model', 'v-if', 2),
-       ('HTTP 状态码 404 表示的含义是？', '网络', '服务器内部错误', '请求成功', '资源未找到', '没有权限', 2);
+INSERT INTO quiz.questions (questionText, answer1Text, answer1Correct, answer2Text, answer2Correct,
+                            answer3Text, answer3Correct, answer4Text, answer4Correct, category, isDelete)
+VALUES ('在 HTML 中，用来表示页面标题栏文字的是哪个标签？', '<body>', FALSE, '<title>', TRUE,
+        '<head>', FALSE, '<h1>', FALSE, 'HTML', 0),
+       ('CSS 中设置文字颜色的属性是？', 'font-color', FALSE, 'text-color', FALSE,
+        'color', TRUE, 'foreground', FALSE, 'CSS', 0),
+       ('在 JavaScript 中，声明一个不能被重新赋值的变量应使用？', 'var', FALSE, 'let', FALSE,
+        'const', TRUE, 'static', FALSE, 'JavaScript', 0),
+       ('Vue 中实现双向绑定的指令是？', 'v-bind', FALSE, 'v-on', FALSE,
+        'v-model', TRUE, 'v-if', FALSE, 'Vue', 0),
+       ('HTTP 状态码 404 表示的含义是？', '服务器内部错误', FALSE, '请求成功', FALSE,
+        '资源未找到', TRUE, '没有权限', FALSE, '网络', 0),
+       ('在 HTML 中，创建超链接应使用哪个标签？', '<a>', TRUE, '<link>', FALSE,
+        '<href>', FALSE, '<url>', FALSE, 'HTML', 0),
+       ('CSS 中用于设置元素外边距的属性是？', 'margin', TRUE, 'padding', FALSE,
+        'border', FALSE, 'spacing', FALSE, 'CSS', 0),
+       ('在 JavaScript 中，向数组末尾添加元素应使用哪个方法？', 'shift', FALSE, 'push', TRUE,
+        'unshift', FALSE, 'pop', FALSE, 'JavaScript', 0),
+       ('Vue 中组件挂载完成之后执行的生命周期钩子是？', 'created', FALSE, 'mounted', TRUE,
+        'updated', FALSE, 'destroyed', FALSE, 'Vue', 0),
+       ('HTTP 中用于获取资源的请求方法是？', 'POST', FALSE, 'PUT', FALSE,
+        'GET', TRUE, 'DELETE', FALSE, '网络', 0),
+       ('CSS 中选中 id 为 box 的元素，正确的写法是？', '.box', FALSE, '#box', TRUE,
+        'box', FALSE, '*box', FALSE, 'CSS', 0),
+       ('JavaScript 中判断"值和类型都相等"应使用哪个运算符？', '==', FALSE, '!=', FALSE,
+        '===', TRUE, '!==', FALSE, 'JavaScript', 0);

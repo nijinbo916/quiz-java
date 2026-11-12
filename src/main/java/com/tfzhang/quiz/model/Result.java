@@ -27,6 +27,11 @@ public class Result {
         return new Result(1, "success", data);
     }
 
+    /** 成功且需要一句提示语时用，msg 放在 msg 字段而不是 data，前端可以直接弹出来 */
+    public static Result successMsg(String msg) {
+        return new Result(1, msg, null);
+    }
+
     public static Result error(String msg) {
         return new Result(0, msg, null);
     }

@@ -206,3 +206,59 @@ Vue 开发服务器（8081）直接请求 8080 不会被浏览器拦，不用再
 6. **依赖下载慢**：`~/.m2/settings.xml` 配阿里云镜像后，首次构建 32 秒完成；不配的话 Spring Boot 全家桶要下很久。
 7. **`mvn test` 报 `CannotCreateTransaction: Could not open JDBC Connection`**：不是代码问题，是 MySQL 没启动。先在任务管理器看有没有 `mysqld.exe`，没有就双击 `启动MySQL.bat`。
 8. **在命令行用 `&` 后台起 mysqld 会被回收**：命令一结束进程就没了（表现是启动日志正常、几秒后 3306 不再监听）。要让数据库常驻，双击 `启动MySQL.bat`，它用 `start` 独立拉起进程。
+
+---
+
+## 八、11-6：题目页与前后端联调（视频 9-8 ~ 10-2）
+
+### 数据库
+
+题目表 `quiz.questions` 按老师笔记《Quiz后端-6》设计：选项固定 4 个，用四组
+`answerNText / answerNCorrect` 存选项与正确答案标记，`isDelete` 逻辑删除。
+额外加了 `category` 字段给管理台做分类展示。建表语句见 `sql/init.sql` 第 3 节。
+
+### 接口清单
+
+| 方法 | 路径 | 说明 | 出参 |
+| --- | --- | --- | --- |
+| POST | `/addQuestion` | 插入新题目（JSON，答案 a/b/c/d） | `Result` |
+| POST | `/updateQuestion?id=` | 修改题目内容与答案 | `Result` |
+| GET | `/delQuestion?id=` | 按 id 逻辑删除 | `Result` |
+| GET | `/getQuestion` | 用户端随机抽 5 道题 | `List<QSBeanOut>` |
+| GET | `/questions?page=&pageSize=` | 管理端分页查询 | `QSBeanPage`（total + qsBeanList） |
+| GET | `/findQuestion?keyword=&page=&pageSize=` | 管理端关键词查询（带分页） | `QSBeanPage` |
+
+### 三层数据流
+
+```
+前端表单 {question, optiona~d, answer:"b"}
+        │  @RequestBody
+        ▼
+QSBean ──Tools.convertToQuestion──▶ Question（answerNCorrect 四个布尔）
+        │                              │
+        ▼ Mapper insert/update         ▼ 查询结果
+   questions 表 ◀────────────── Tools.convertToQSBeanManageList / convertToQSBeanList
+                                     │
+                    管理台要 QSBeanOutManage（id+options+answerLabel）
+                    用户端要 QSBeanOut（question + answers[{text,correct}]）
+```
+
+### 校验（QuestionServiceImpl）
+
+- 题干非空且至少 4 个字；四个选项都不能为空（表里是 NOT NULL，先在业务层拦住）
+- answer 只接受 a/b/c/d，非法时抛 `IllegalArgumentException`，
+  Controller 里用 `@ExceptionHandler` 统一转成 `code=0` 的 `Result`，前端直接弹 msg
+
+### 前端联调要点（笔记 2.4）
+
+1. Java 后端占 8080，前端 devServer 改 **8081**
+2. `vue.config.js` 配代理：`'/'` → `http://localhost:8080`，页面里全用相对路径，绕开跨域
+3. `POST /addQuestion` 必须 `@RequestBody` + 前端 `Content-Type: application/json`，
+   两边格式不统一时后端收到的全是 null（笔记里踩过）
+4. 后端没启动时前端题目页回退到演示数据（demoMode），线上静态版也能正常浏览
+
+### 验证结果
+
+- `mvn test`：17 个用例全过（用户 9 + 题目 8，类级 `@Transactional` 自动回滚）
+- curl 实测：分页 total=12 ✓、关键词 CSS 命中 3 条 ✓、随机取题 5 道 ✓、
+  插入 → 修改（答案 C 生效）→ 删除 → 重复删除返回 code=0 ✓、非法答案被拦截 ✓
