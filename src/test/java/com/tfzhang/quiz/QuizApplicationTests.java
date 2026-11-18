@@ -299,6 +299,63 @@ class QuizApplicationTests {
         assertEquals("D", after.getQsBeanList().get(0).getAnswerLabel());
     }
 
+    // ==================== 登录与 JWT（视频 10-4 / 10-5，验收条件 3.2 / 3.3） ====================
+
+    /** 登录：正确的用户名密码能查到人，密码错了返回 null */
+    @Test
+    public void testLogin() {
+        // admin 是 init.sql 预置的管理员，初始密码 123456
+        User admin = userService.login("admin", "123456");
+        System.out.println("admin 登录：" + (admin != null ? "成功 id=" + admin.getId() + " role=" + admin.getUserRole() : "失败"));
+        assertNotNull(admin);
+        assertEquals(1, admin.getUserRole());
+
+        User normal = userService.login("吴小诚", "123456");
+        System.out.println("普通用户登录：" + (normal != null ? "成功 role=" + normal.getUserRole() : "失败"));
+        assertNotNull(normal);
+        assertEquals(0, normal.getUserRole());
+
+        User wrong = userService.login("admin", "wrong-password");
+        System.out.println("密码错误：" + (wrong == null ? "正确返回 null" : "不该返回对象"));
+        assertEquals(null, wrong);
+    }
+
+    /** 角色保存：用户端注册固定普通用户，管理端 addUser 可以指定管理员 */
+    @Test
+    public void testSaveUserWithRole() {
+        // register 路径：role 固定 0
+        userService.addUser("roletestreg", "123456", "123456");
+        User reg = userMapper.getByUsername("roletestreg");
+        System.out.println("注册入库 role = " + reg.getUserRole() + "（应为 0）");
+        assertEquals(0, reg.getUserRole());
+
+        // addUser 路径：role 来自前端表单
+        userService.saveUser("roletestadmin", "123456", "123456", "1");
+        User admin = userMapper.getByUsername("roletestadmin");
+        System.out.println("管理端添加入库 role = " + admin.getUserRole() + "（应为 1）");
+        assertEquals(1, admin.getUserRole());
+    }
+
+    /** 重置密码（验收条件：重置初始密码为 123456）：重置后用 123456 能登录 */
+    @Test
+    public void testResetPassword() {
+        userService.saveUser("resettest", "oldpassword66", "oldpassword66", "0");
+        User before = userService.login("resettest", "oldpassword66");
+        assertNotNull(before);
+        System.out.println("旧密码登录成功，开始重置");
+
+        User saved = userMapper.getByUsername("resettest");
+        boolean ok = userService.resetPassword(saved.getId());
+        System.out.println("重置影响 = " + ok);
+
+        User afterOld = userService.login("resettest", "oldpassword66");
+        User afterNew = userService.login("resettest", "123456");
+        System.out.println("旧密码登录：" + (afterOld == null ? "已失效（正确）" : "仍有效（错误）"));
+        System.out.println("新密码登录：" + (afterNew != null ? "成功（正确）" : "失败（错误）"));
+        assertEquals(null, afterOld);
+        assertNotNull(afterNew);
+    }
+
     private Question buildQuestion(String text, String correctOption) {
         Question question = new Question();
         question.setQuestionText(text);

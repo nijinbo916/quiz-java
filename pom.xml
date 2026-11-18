@@ -50,6 +50,25 @@
             <version>3.14.0</version>
         </dependency>
 
+        <!-- JJWT：生成和解析 JWT 令牌（10-5 登录验证用的就是它） -->
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-api</artifactId>
+            <version>0.11.5</version>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-impl</artifactId>
+            <version>0.11.5</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-jackson</artifactId>
+            <version>0.11.5</version>
+            <scope>runtime</scope>
+        </dependency>
+
         <!-- 测试：JUnit5 + SpringBootTest -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

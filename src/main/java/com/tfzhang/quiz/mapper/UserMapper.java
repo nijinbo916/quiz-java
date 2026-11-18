@@ -29,6 +29,14 @@ public interface UserMapper {
     @Select("select * from user where id = #{id} and isDelete = 0")
     User getById(Long id);
 
+    /** 按用户名精确查询（登录用），未删除的才允许登录 */
+    @Select("select * from user where userName = #{username} and isDelete = 0")
+    User getByUsername(@Param("username") String username);
+
+    /** 重置密码：管理端把用户密码重置为初始密码（密文由 Service 层算好传入） */
+    @Update("update user set userPassword = #{password}, updateTime = now() where id = #{id} and isDelete = 0")
+    int resetPassword(@Param("id") Long id, @Param("password") String password);
+
     /** 按用户名模糊查询（like '%关键字%'） */
     @Select("select * from user where isDelete = 0 and userName like concat('%', #{keyword}, '%') order by id")
     List<User> findByName(@Param("keyword") String keyword);

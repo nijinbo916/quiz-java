@@ -1,0 +1,15 @@
+# ============================================================
+# Ubuntu 服务器上运行 jar 时使用的外部配置文件
+# 放到 quiz-0.0.1-SNAPSHOT.jar 同目录下（与 jar 同级的 application.yml
+# 会覆盖 jar 内的配置，这是 Spring Boot 的约定）
+# ============================================================
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/quiz
+    # 按老师笔记 2.7 的建议：不要直接用 root，建一个专用账号
+    username: quizuser
+    password: quiz12345
+
+server:
+  port: 8080

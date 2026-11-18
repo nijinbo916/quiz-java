@@ -262,3 +262,54 @@ QSBean ──Tools.convertToQuestion──▶ Question（answerNCorrect 四个�
 - `mvn test`：17 个用例全过（用户 9 + 题目 8，类级 `@Transactional` 自动回滚）
 - curl 实测：分页 total=12 ✓、关键词 CSS 命中 3 条 ✓、随机取题 5 道 ✓、
   插入 → 修改（答案 C 生效）→ 删除 → 重复删除返回 code=0 ✓、非法答案被拦截 ✓
+
+---
+
+## 九、11-13：登录鉴权、管理端联调收尾与 Ubuntu 部署（视频 10-3 ~ 12）
+
+### 新增能力
+
+- **JWT 登录**：`utils/JwtUtil`（jjwt 0.11.5，HS256，24h 过期）+ `filter/LoginCheckFilter`
+  - `POST /login`：请求体 `{username, password, userrole?}`；`userrole:"1"` 表示管理端入口，
+    普通用户会被拒（msg=`invalid account`，笔记 2.8 完善第 1 条）
+  - 除 `login` / `register` 外所有接口都要带 `token` 请求头（笔记 2.7 约定）
+  - 管理端接口（addUser、删除、重置密码、题目增删改、用户/题目查询）额外要求 token 里
+    `userRole=1`，普通用户拿到的 token 只能用 `getQuestion`
+- **角色**：`user` 表 `userRole` 字段（0 普通用户 / 1 管理员）；预置 admin、倪金博两个管理员
+- **注册拆分**（笔记 2.7）：`POST /register` 用户端专用、角色写死 0；`POST /addUser` 管理端专用、
+  角色由前端表单传（验收条件 3.2 第 1 条）
+- **重置密码**：`GET /resetPassword?id=`，初始密码固定 123456（验收条件 3.2 第 4 条）
+- **全局异常**：`exception/GlobalExceptionHandler`，异常写日志、前端只收「操作失败，请联系管理员！」
+- 种子用户密码全部统一为加盐 MD5（`md5("com.quiz" + 明文)`），与注册逻辑一致
+
+### 接口清单（完整）
+
+| 方法 | 路径 | 鉴权 | 说明 |
+| --- | --- | --- | --- |
+| POST | `/login` | 无 | 登录，data 返回 JWT；userrole=1 时仅管理员可过 |
+| POST | `/register` | 无 | 用户端注册，角色固定普通用户 |
+| POST | `/addUser` | 管理员 | 管理端添加用户（带角色选项） |
+| GET | `/resetPassword?id=` | 管理员 | 重置密码为 123456 |
+| GET | `/users?page=&pageSize=` | 管理员 | 用户分页 |
+| GET | `/findUser?keyword=` | 管理员 | 用户关键词查询 |
+| GET | `/deleteById?id=` / `/deleteByName?username=` | 管理员 | 逻辑删除 |
+| DELETE | `/hardDelete/{id}` | 管理员 | 物理删除 |
+| GET | `/getQuestion` | 任意已登录用户 | 随机抽 5 题（用户端答题用） |
+| GET | `/questions?page=&pageSize=` | 管理员 | 题目分页 |
+| GET | `/findQuestion?keyword=&page=&pageSize=` | 管理员 | 题目关键词查询 |
+| POST | `/addQuestion` / `/updateQuestion?id=` | 管理员 | 题目增改 |
+| GET | `/delQuestion?id=` | 管理员 | 题目逻辑删除 |
+
+### 验证
+
+`mvn test` 20 个用例全过；curl 实测登录/invalid account/token 拦截/权限拦截/注册/添加
+管理员/重置密码全链路（见 git 提交记录）。
+
+### 部署（VirtualBox Ubuntu）
+
+`deploy/` 目录是部署材料：
+
+- `quiz.sql` —— mysqldump 导出的完整库（含数据，密码已加密）
+- `application-ubuntu.yml` —— 服务器上的外部配置（专用账号 quizuser，不用 root）
+- `nginx-quiz.conf` —— 管理端 8081 / 用户端 80 双 server 块 + 接口反向代理（跨域由 Nginx 负责）
+- `部署手册.md` —— 从装虚拟机到验收自检清单的完整步骤

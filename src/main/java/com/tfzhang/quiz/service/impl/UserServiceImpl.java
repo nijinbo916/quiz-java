@@ -34,11 +34,22 @@ public class UserServiceImpl implements UserService {
     private UserMapper userMapper;
 
     /**
-     * 注册新用户。
+     * 注册新用户（用户端专用）。
      * 对应视频 9-4（实现新用户的添加及 Service 层）和 9-5（用户名是否存在的练习）。
+     * 用户端注册一律是普通用户（笔记 2.7：register 调用时 isRole 默认为零）。
      */
     @Override
     public Result addUser(String username, String password, String checkpassword) {
+        return saveUser(username, password, checkpassword, "0");
+    }
+
+    /**
+     * 保存用户（笔记 2.7 的改造）：
+     * /register（用户端）和 /addUser（管理端）调用同一个方法，
+     * 区别只在 role —— 用户端固定 "0"，管理端由前端表单传入。
+     */
+    @Override
+    public Result saveUser(String username, String password, String checkpassword, String role) {
 
         // 1、用户名和密码不能为空（StringUtils.isAnyBlank：任意一个为 null、空串或只有空格都算空）
         if (StringUtils.isAnyBlank(username, password, checkpassword)) {
@@ -65,11 +76,18 @@ public class UserServiceImpl implements UserService {
         // 5、密码加密后再入库，数据库里不存明文
         String encryptedPassword = DigestUtils.md5DigestAsHex((SALT + password).getBytes(StandardCharsets.UTF_8));
 
-        // 6、组装对象并插入
+        // 6、组装对象并插入；角色由调用方决定，缺省按普通用户处理
+        int userRole;
+        try {
+            userRole = Integer.parseInt(role == null ? "0" : role);
+        } catch (NumberFormatException e) {
+            userRole = 0;
+        }
+
         User user = new User();
         user.setUserName(username);
         user.setUserPassword(encryptedPassword);
-        user.setUserRole(0);   // 注册的一律是普通用户
+        user.setUserRole(userRole);
         user.setIsDelete(0);
         Date now = new Date();
         user.setCreateTime(now);
@@ -82,6 +100,38 @@ public class UserServiceImpl implements UserService {
             return Result.success(user);
         }
         return Result.error("注册用户失败");
+    }
+
+    /**
+     * 登录（10-4）：用户名 + 明文密码，和库里加盐 MD5 后的密文比对。
+     * 验证通过返回用户对象（含角色），任何一步不匹配都返回 null。
+     */
+    @Override
+    public User login(String username, String password) {
+        if (StringUtils.isAnyBlank(username, password)) {
+            return null;
+        }
+        User user = userMapper.getByUsername(username);
+        if (user == null || Integer.valueOf(1).equals(user.getIsDelete())) {
+            return null;
+        }
+        String encryptedPassword = DigestUtils.md5DigestAsHex((SALT + password).getBytes(StandardCharsets.UTF_8));
+        if (!encryptedPassword.equals(user.getUserPassword())) {
+            return null;
+        }
+        // 登录成功，密码不外传
+        user.setUserPassword(null);
+        return user;
+    }
+
+    /** 重置密码（验收条件 3.2 第 4 条）：初始密码固定为 123456 */
+    @Override
+    public boolean resetPassword(Long id) {
+        if (id == null) {
+            return false;
+        }
+        String initialPassword = DigestUtils.md5DigestAsHex((SALT + "123456").getBytes(StandardCharsets.UTF_8));
+        return userMapper.resetPassword(id, initialPassword) > 0;
     }
 
     /** 按 id 逻辑删除（9-6） */

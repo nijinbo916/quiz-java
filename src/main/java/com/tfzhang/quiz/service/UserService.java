@@ -15,8 +15,20 @@ import java.util.List;
  */
 public interface UserService {
 
-    /** 注册新用户：校验用户名密码 -> 查重 -> MD5 加盐加密 -> 入库 */
+    /** 注册新用户（用户端专用，角色固定普通用户）：校验用户名密码 -> 查重 -> MD5 加盐加密 -> 入库 */
     Result addUser(String username, String password, String checkpassword);
+
+    /**
+     * 保存用户（管理端 /addUser 与用户端 /register 共用的底层方法，笔记 2.7）。
+     * role 由调用方传入："0" 普通用户、"1" 管理员；用户端固定传 "0"。
+     */
+    Result saveUser(String username, String password, String checkpassword, String role);
+
+    /** 登录：用户名 + 明文密码，验证通过返回用户对象（含角色），失败返回 null */
+    User login(String username, String password);
+
+    /** 重置用户密码为初始密码 123456（验收条件 3.2 第 4 条） */
+    boolean resetPassword(Long id);
 
     /** 按 id 逻辑删除，返回 true 表示确实删掉了一条 */
     boolean deleteUserById(Long id);
